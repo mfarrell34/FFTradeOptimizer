@@ -14,6 +14,7 @@ import tradeOptimizer.projections.WeekProjections;
 public class TradeGenerator {
 	
 	private List<Team> leagueTeams;
+
 	
 	public TradeGenerator(LeagueDataSource dataSource, ProjectionDataSource projectionSource) {
 	    FantasyLeague.setupLeague(dataSource, projectionSource);
@@ -37,9 +38,7 @@ public class TradeGenerator {
 	        for (int j = i + 1; j < leagueTeams.size(); j++) {
 		    	Team thisTeam = leagueTeams.get(i);
 		    	Team otherTeam = leagueTeams.get(j);
-	    		List<List<Integer>> teamsTradeCombos = thisTeam.getTradeCombinations();
-		    	List<List<Integer>> otherTeamCombos = otherTeam.getTradeCombinations();
-		    	TradeCalculator calculator = new TradeCalculator(thisTeam, otherTeam, teamsTradeCombos, otherTeamCombos);
+		    	TradeCalculator calculator = new TradeCalculator(thisTeam, otherTeam);
 		    	calculator.getTrades();
 		    }
 		}

@@ -71,7 +71,7 @@ public class WeekCalculator {
 	 * with the best available player from waiver.
 	 */
 	private void checkNeedWaiverPlayers() {
-		PositionsFillableChecker posChecker = new PositionsFillableChecker(projectionsToUse, FantasyLeague.getPositions());
+		PositionsFillableChecker posChecker = new PositionsFillableChecker(projectionsToUse);
 		if (!posChecker.allPositionsFilled()) {
 			List<LeaguePosition> unfilledPositions = posChecker.getUnfilledPositions();
 			for (LeaguePosition emptyPosition : unfilledPositions) {

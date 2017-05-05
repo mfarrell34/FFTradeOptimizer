@@ -28,20 +28,20 @@ public class PlayerProjection implements Comparable<Object>{
 	 * Accessor methods
 	 */
 	public Player getPlayer() {
-		return FantasyLeague.getPlayerById(this.thisPlayerId);
+		return FantasyLeague.getPlayerById(thisPlayerId);
 	}
 	
 	public Double getProjection() {
-		return this.projection;
+		return projection;
 	}
 	
 	public int getPlayerId() {
-		return this.thisPlayerId;
+		return thisPlayerId;
 	}
 	
 	public List<Position> getFootballPosition() {
-		if (FantasyLeague.isValidPlayer(this.thisPlayerId)) {
-			return FantasyLeague.getPlayerById(this.thisPlayerId).getFootballPositions();
+		if (FantasyLeague.isValidPlayer(thisPlayerId)) {
+			return FantasyLeague.getPlayerById(thisPlayerId).getFootballPositions();
 		} else {
 			return new ArrayList<Position>();
 		}

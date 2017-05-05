@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.google.common.collect.ImmutableMap;
 
 import tradeOptimizer.league.Position;
 /*
@@ -12,11 +13,8 @@ import tradeOptimizer.league.Position;
  */
 public class WeekProjections {
 
-	Map<Integer,Double> playerProjections; //maps player Id to the player's projected point total for the week
-	//List<Player> playersToUse;
-	//List<PlayerProjection> projectionsToUse;
-	Map<Position,Double> topWaiverValueForPosition; //maps each position to the point value of the highest projected player available on waivers
-	//Map<Integer,String> playerPositionMap;
+	private Map<Integer,Double> playerProjections; //maps player Id to the player's projected point total for the week
+	private Map<Position,Double> topWaiverValueForPosition; //maps each position to the point value of the highest projected player available on waivers
 	private int weekNumber; //week number in NFL season for each instance of class
 	private boolean projectionsSet = false; //indicates whether projection data has been set for the WeekProjections instance
 	
@@ -26,7 +24,6 @@ public class WeekProjections {
 	public WeekProjections(int weekNum) {
 		topWaiverValueForPosition = new HashMap<Position,Double>();
 		this.weekNumber = weekNum;
-		//playersToUse = new ArrayList<Player>();
 	}
 	
 	/*
@@ -37,19 +34,21 @@ public class WeekProjections {
 	}
 
 	public boolean getProjectionsSet() {
-		return this.projectionsSet;
+		return projectionsSet;
 	}
 	
 	public Map<Position,Double> getTopWaiverForPositions() {
-		return this.topWaiverValueForPosition;
+		return topWaiverValueForPosition;
 	}
 	
 	/*
 	 * Method to populate the playerId:projected points map for the given week
 	 */
 	public void addProjectionsForWeek(Map<Integer, Double> projections) {
-		this.playerProjections = projections;
-		projectionsSet = true;
+		if (!projectionsSet) {
+		    playerProjections = new ImmutableMap.Builder().putAll(projections).build();
+		    projectionsSet = true;
+		}
 	}
 	
 	/*
@@ -65,17 +64,13 @@ public class WeekProjections {
 	}
 	
 	
-	/*public void addPlayerPositionsMap(HashMap<Integer,String> playerPositions) {
-		this.playerPositionMap = playerPositions;
-	} */
-	
 	/*
 	 * Method getPlayersToUse returns a sorted list of PlayerProjections
 	 * List is sorted highest to lowest by each Player's projected points for the WeekProjections instance
 	 * Argument is a list of Players that represents the players in an instance of a Team, this could be before or after
 	 * a team's players have been updated by a Trade
 	 */
-	public List<PlayerProjection> getPlayersToUse(List<Integer> players) {
+	public List<PlayerProjection> getPlayersToUse(Integer[] players) {
 		List<PlayerProjection> addedPlayers = new ArrayList<PlayerProjection>();
 		// Iterate through list of players and add PlayerProjection to list
 		// If playerProjections map contains the playerId then we have a projected points value, use this to create the PlayerProjection

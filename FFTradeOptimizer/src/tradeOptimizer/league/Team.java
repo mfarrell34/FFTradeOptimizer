@@ -2,7 +2,9 @@ package tradeOptimizer.league;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import com.google.common.collect.ImmutableList;
 
 import tradeOptimizer.league.FantasyLeague;
 import tradeOptimizer.trades.Trade;
@@ -19,7 +21,7 @@ public class Team {
 	private String teamName;
 	private ArrayList<Trade> trades; //only used for initial Team instances, not for Cloned instances
 	private Double currentBaseProjectedPoints = 0.0; //can only be set once, represents projected points for remainder of season with current team
-	private List<Integer> receivedPlayers; //only used by Cloned Team instances
+	private List<List<Integer>> playerCombos;
 	
 	/*
 	 * Constructor method used when creating initial Team instance
@@ -37,7 +39,7 @@ public class Team {
 	 * Cloning constructor, creates new instance of Team that allows Players on Team
 	 * to be updated by Trades without modifying players on original Team instance
 	 */
-    public Team(Team team) {
+/*    public Team(Team team) {
     	this.teamName = team.getTeamName();
     	List<Integer> currentPlayers = new ArrayList<Integer>();
     	//Clone each Player on Team so current Players list on cloned team won't reference same Player objects as initial Team instance
@@ -46,7 +48,7 @@ public class Team {
     	}
     	this.currentPlayers = currentPlayers;
     	this.receivedPlayers = new ArrayList<Integer>();
-    }
+    } */
     
     /*
      * Accessor methods
@@ -60,13 +62,13 @@ public class Team {
 		return this.trades;
 	}
 	
-	public List<Integer> getCurrentPlayers() {
-		return this.currentPlayers;
+	public Integer[] getCurrentPlayers() {
+		return currentPlayers.toArray(new Integer[currentPlayers.size()]);
 	}
 	
-	public List<Integer> getNewPlayers() {
+/*	public List<Integer> getNewPlayers() {
 		return this.receivedPlayers;
-	}
+	} */
 	
 	public Double getBaseProjectedPoints() {
 		return this.currentBaseProjectedPoints;
@@ -100,72 +102,24 @@ public class Team {
 	}
 	
 	/*
-	 * updatePlayersForTrade method TODO
-	 */
-	
-	public void updatePlayersForTrade(List<Integer> playersSent, List<Integer> playersReceived) {
-		this.currentPlayers.removeAll(playersSent);
-		this.currentPlayers.addAll(playersReceived);
-		this.receivedPlayers.addAll(playersReceived);
-		
-		//check if any standard league positions are now empty as a result of the trade
-		//if so, add the best available player from waivers to fill the empty position
-		//note this is different than empty position check done in weekly projection calculator
-		//as that will change week to week depending on bye weeks
-		List<LeaguePosition> positionsToFill = FantasyLeague.getPositions();
-		int[] positionsFilled = new int[positionsToFill.size()];
-		Arrays.fill(positionsFilled, -1);
-		int numberFilled = 0;
-		for (int playerId : this.currentPlayers) {
-			if (FantasyLeague.isValidPlayer(playerId)) {
-			    Player player = FantasyLeague.getPlayerById(playerId);
-			    for (int i = 0; i < positionsToFill.size(); i++) {
-				    if (player.canBeUsedInPosition(positionsToFill.get(i)) &&
-					    positionsFilled[i] == -1) {
-				    	
-					    positionsFilled[i] = player.getPlayerId();
-					    numberFilled++;
-					    break;
-				    }
-				}
-			}
-			if (numberFilled == positionsToFill.size()) {
-				break;
-			}
-		}
-		if (numberFilled < positionsToFill.size() && FantasyLeague.getAvailablePlayersCount() > 0) {
-			List<Position> positionsAddedFromWaiver = new ArrayList<Position>();
-			for (int i = 0; i < positionsToFill.size(); i++) {
-				if (positionsFilled[i] == -1) {
-					//may need to update this logic
-					LeaguePosition positionNeedsFilling = positionsToFill.get(i);
-					for (Position pos : positionNeedsFilling.getPossiblePositions()) {
-						if (FantasyLeague.hasAvailablePlayerForPosition(pos) &&
-							!positionsAddedFromWaiver.contains(pos)) {
-							Player addWaiverPlayer = FantasyLeague.getBestAvailablePlayer(pos);
-							this.currentPlayers.add(addWaiverPlayer.getPlayerId());
-							positionsAddedFromWaiver.add(pos);
-						}
-					}
-				}
-			}
-		}
-	}
-	
-	/*
 	 * getTradeCombinations method returns ArrayList containing all possible combinations of Players from Team that can be sent to other Team in a Trade
 	 * combination of Players represented by ArrayList of Players
 	 */
 	
 	public List<List<Integer>> getTradeCombinations() {
-		List<List<Integer>> tradeCombos = new ArrayList<List<Integer>>();
-		for (int i = 0; i < currentPlayers.size(); i++ ) {
-			for (int j = i + 1; j < currentPlayers.size(); j++) {
-				tradeCombos.add(new ArrayList<Integer>(Arrays.asList(currentPlayers.get(i), currentPlayers.get(j))));
-			}
-			tradeCombos.add(new ArrayList<Integer>(Arrays.asList(currentPlayers.get(i))));
+		synchronized (this) {
+		    if (playerCombos == null) {
+		        List<List<Integer>> tradeCombos = new ArrayList<List<Integer>>();
+		        for (int i = 0; i < currentPlayers.size(); i++ ) {
+			        for (int j = i + 1; j < currentPlayers.size(); j++) {
+				        tradeCombos.add(new ArrayList<Integer>(Arrays.asList(currentPlayers.get(i), currentPlayers.get(j))));
+			        }
+			        tradeCombos.add(new ArrayList<Integer>(Arrays.asList(currentPlayers.get(i))));
+		        }
+		        playerCombos = new ImmutableList.Builder().addAll(tradeCombos).build();
+		    }
 		}
-		return tradeCombos;
+		return playerCombos;
 	}
 	
 }

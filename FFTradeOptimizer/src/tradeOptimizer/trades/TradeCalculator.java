@@ -18,35 +18,33 @@ public class TradeCalculator {
 	private Double team1BaseTotal;
 	private Double team2BaseTotal;
 	
-	public TradeCalculator(Team firstTeam, Team secondTeam, List<List<Integer>> firstTeamCombos, 
-			List<List<Integer>> secondTeamCombos) {
-		this.team1 = firstTeam;
-		this.team2 = secondTeam;
-		this.team1Combinations = firstTeamCombos;
-		this.team2Combinations = secondTeamCombos;
-		this.team1BaseTotal = firstTeam.getBaseProjectedPoints();
-		this.team2BaseTotal = secondTeam.getBaseProjectedPoints();
+	public TradeCalculator(Team firstTeam, Team secondTeam) {
+		team1 = firstTeam;
+		team2 = secondTeam;
+		team1Combinations = firstTeam.getTradeCombinations();
+		team2Combinations = secondTeam.getTradeCombinations();
+		team1BaseTotal = firstTeam.getBaseProjectedPoints();
+		team2BaseTotal = secondTeam.getBaseProjectedPoints();
 	}
 	
 	public void getTrades() {
 		Map<List<Integer>, TradeSide> team2BestTrades = new HashMap<List<Integer>, TradeSide>();
 		Map<List<Integer>, TradeSide> team1BestTrades = new HashMap<List<Integer>, TradeSide>();
+		RosterUpdater team1Updater = new RosterUpdater(team1.getCurrentPlayers());
+		RosterUpdater team2Updater = new RosterUpdater(team2.getCurrentPlayers());
 		for (List<Integer> tradePlayers : team1Combinations) {
 			for (List<Integer> otherPlayers : team2Combinations) {
 				Double currentTeam1Total = 0.0;
 				Double currentTeam2Total = 0.0;				
-				Team team1Clone = new Team(team1);
-				Team team2Clone = new Team(team2);
-
-				team1Clone.updatePlayersForTrade(tradePlayers, otherPlayers);
-				team2Clone.updatePlayersForTrade(otherPlayers, tradePlayers);
+				Integer[] team1Roster = team1Updater.getUpdatedRoster(tradePlayers, otherPlayers);
+				Integer[] team2Roster = team2Updater.getUpdatedRoster(otherPlayers, tradePlayers);
 				int team1Counter = 0;
 				int team2Counter = 0;
 				for (WeekProjections week : FantasyLeague.getWeeks()) {
-					WeekCalculator calculator = new WeekCalculator(week.getPlayersToUse(team1Clone.getCurrentPlayers()), week.getTopWaiverForPositions(), team1Clone.getNewPlayers(), week.getWeekNum());
+					WeekCalculator calculator = new WeekCalculator(week.getPlayersToUse(team1Roster), week.getTopWaiverForPositions(), tradePlayers, week.getWeekNum());
 					currentTeam1Total += calculator.getOptimizedProjectedPoints();
 					team1Counter += calculator.getTimesNewPlayerUsed();
-					calculator = new WeekCalculator(week.getPlayersToUse(team2Clone.getCurrentPlayers()), week.getTopWaiverForPositions(), team2Clone.getNewPlayers(), week.getWeekNum());
+					calculator = new WeekCalculator(week.getPlayersToUse(team2Roster), week.getTopWaiverForPositions(), otherPlayers, week.getWeekNum());
 					currentTeam2Total += calculator.getOptimizedProjectedPoints();
 					team2Counter += calculator.getTimesNewPlayerUsed();
 				}

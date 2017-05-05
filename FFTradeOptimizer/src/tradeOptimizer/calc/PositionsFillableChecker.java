@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import tradeOptimizer.league.FantasyLeague;
 import tradeOptimizer.league.LeaguePosition;
 import tradeOptimizer.projections.PlayerProjection;
 
@@ -31,8 +32,8 @@ public class PositionsFillableChecker {
 	int[] dist;
 	List<Integer>[] edges;
 	
-	public PositionsFillableChecker(List<PlayerProjection> players, List<LeaguePosition> positions) {
-		this.positions = positions;
+	public PositionsFillableChecker(List<PlayerProjection> players) {
+		this.positions = FantasyLeague.getPositions();
 		this.players = players;
 		numPlayers = players.size();
 		numPositions = positions.size();

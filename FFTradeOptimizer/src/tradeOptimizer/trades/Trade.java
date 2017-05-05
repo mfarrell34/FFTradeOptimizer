@@ -32,10 +32,6 @@ public class Trade implements Comparable {
 		this.otherTeamPointIncrease = otherPoints;
 	}
 	
-/*	public Trade getReverseTrade(String teamName) {
-		Trade reverseTrade = new Trade(this.otherTeamsPlayers, teamName, this.thisTeamsPlayers, this.otherTeamPointIncrease, this.thisTeamPointIncrease);
-		return reverseTrade;
-	} */
 
 	/*
 	 * compareTo override sorts trades by thisTeam's projected point change to allow returning of optimal trades rather than all possible trades

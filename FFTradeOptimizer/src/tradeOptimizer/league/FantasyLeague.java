@@ -3,9 +3,13 @@ package tradeOptimizer.league;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import tradeOptimizer.league.data.LeagueDataSource;
 import tradeOptimizer.projections.ProjectionDataSource;
@@ -16,9 +20,9 @@ import tradeOptimizer.projections.WeekProjections;
 
 public class FantasyLeague {
 
-	private static List<LeaguePosition> positions = new ArrayList<LeaguePosition>();
-	private static Map<Position, Player> bestAvailablePlayersByPosition = new HashMap<Position, Player>();
-	private static Map<Integer,Player> playersById = new HashMap<Integer, Player>();
+	private static List<LeaguePosition> positions;
+	private static Map<Position, Player> bestAvailablePlayersByPosition;
+	private static Map<Integer,Player> playersById;
 	private static List<Team> teams;
 	private static List<WeekProjections> weeks;
 	private static String leagueName;
@@ -32,31 +36,33 @@ public class FantasyLeague {
 	
 	public static void setupLeague(LeagueDataSource leagueData, ProjectionDataSource projData) {
 		if (!leagueInitialized) {
+			Map<Integer,Player> playersMap = new HashMap<Integer,Player>();
 	    	currentWeek = leagueData.getCurrentWeek();
-	    	putPlayersInMap(leagueData.getPlayersById());
-	    	positions = leagueData.getLeaguePositions();
-		    teams = leagueData.getTeams();
+	    	putPlayersInMap(leagueData.getPlayersById(), playersMap);
+	    	positions = new ImmutableList.Builder().addAll(leagueData.getLeaguePositions()).build();
+		    teams = new ImmutableList.Builder().addAll(leagueData.getTeams()).build();
 		    leagueName = leagueData.getLeagueName();
-		    weeks = projData.getWeekProjections();
-		    addBestAvailablePlayers(projData.getBestAvailablePlayersByPosition());
+		    weeks = new ImmutableList.Builder().addAll(projData.getWeekProjections()).build();
+		    addBestAvailablePlayers(projData.getBestAvailablePlayersByPosition(), playersMap);
 	    	//add "dummy" players that will be used to represent
 	    	//players added from waiver based on their position
 	    	//these have negative Player Ids defined in the Position enum
 	    	//to prevent clashing with Player Ids of actual players
 	    	for (Position pos : Position.values()) {
 		    	Player waiverPlayer = new Player("Waiver add:" + pos.name(), Arrays.asList(pos), pos.getWaiverId());
-		    	putPlayerInMap(pos.getWaiverId(), waiverPlayer);
+		    	putPlayerInMap(pos.getWaiverId(), waiverPlayer, playersMap);
 		    }
+	    	playersById = new ImmutableMap.Builder().putAll(playersMap).build();
 	    	leagueInitialized = true;
 		}
 	}
 	
 	public static int getPlayerCount() {
-		return playersById.keySet().size();
+		return playersById.size();
 	}
 	
 	public static int getAvailablePlayersCount() {
-		return bestAvailablePlayersByPosition.keySet().size();
+		return bestAvailablePlayersByPosition.size();
 	}
 	
 	public static List<LeaguePosition> getPositions() {
@@ -87,22 +93,22 @@ public class FantasyLeague {
 		return leagueName;
 	}
 	
-	public static void putPlayersInMap(Map<Integer,Player> playerIdMap) {
-		for (int playerId : playerIdMap.keySet()) {
-		    if (!playersById.containsKey(playerId)) {
-			    playersById.put(playerId, playerIdMap.get(playerId));
+	private static void putPlayersInMap(Map<Integer,Player> playersToAdd, Map<Integer,Player> targetMap) {
+		for (int playerId : playersToAdd.keySet()) {
+		    if (!targetMap.containsKey(playerId)) {
+		    	targetMap.put(playerId, playersToAdd.get(playerId));
 		    } else {
-			    System.out.println("Warning, attempted to add player with Id already in use. Player name: " + playerIdMap.get(playerId).getName() + " Id: " + String.valueOf(playerIdMap.get(playerId).getPlayerId()));
+			    System.out.println("Warning, attempted to add player with Id already in use. Player name: " + playersToAdd.get(playerId).getName() + " Id: " + String.valueOf(playersToAdd.get(playerId).getPlayerId()));
 		    }
 		}
 	}
 	
-	public static void putPlayerInMap(int playerId, Player player) {
-	    if (!playersById.containsKey(playerId)) {
-		    playersById.put(playerId, player);
+	private static void putPlayerInMap(int playerId, Player player, Map<Integer,Player> targetMap) {
+	    if (!targetMap.containsKey(playerId)) {
+	        targetMap.put(playerId, player);
 	    } else {
 		    System.out.println("Warning, attempted to add player with Id already in use. Player name: " + player.getName() + " Id: " + String.valueOf(player.getPlayerId()));
-	    }		
+	    }
 	}
 	
 	public static boolean hasAvailablePlayerForPosition(Position position) {
@@ -113,19 +119,22 @@ public class FantasyLeague {
 		return bestAvailablePlayersByPosition.get(position);
 	}
 	
-	public static void addBestAvailablePlayers(Map<Position, Player> bestWaiverPlayers) {
-		for (Position position : bestWaiverPlayers.keySet()) {
-			Player player = bestWaiverPlayers.get(position);
-			if (!bestAvailablePlayersByPosition.containsKey(position)) {
-				putPlayerInMap(player.getPlayerId(), player);
-				//check if player was successfully added to league map, if Id was duplicate then don't use this player
-				if (getPlayerById(player.getPlayerId()).equals(player)) {
-					bestAvailablePlayersByPosition.put(position, player);
-				}
-				
-			} else {
-				//add warning
-			}
+	private static void addBestAvailablePlayers(Map<Position, Player> bestWaiverPlayers, Map<Integer,Player> targetMap) {
+		if (!leagueInitialized) {
+			Map<Position,Player> bestPlayers = new HashMap<Position,Player>();
+	    	for (Position position : bestWaiverPlayers.keySet()) {
+			    if (!bestPlayers.containsKey(position)) {
+			    	Player player = bestWaiverPlayers.get(position);
+			    	putPlayerInMap(player.getPlayerId(), player, targetMap);
+			    	//check if player was successfully added to league map, if Id was duplicate then don't use this player
+			    	if (targetMap.get(player.getPlayerId()).equals(player)) {
+			    		bestPlayers.put(position, player);
+			    	}	
+		    	} else {
+		    		//add warning
+		    	}
+	    	}
+	    	bestAvailablePlayersByPosition = new ImmutableMap.Builder().putAll(bestPlayers).build();
 		}
 	}
 }
